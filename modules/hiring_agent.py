@@ -1,17 +1,17 @@
-import io
 import json
 import os
 
-import pdf2image
 from google.genai import types
 
 
 def extract_resume_pages(uploaded_file):
     """
-    Convert a candidate resume PDF into Gemini image parts.
+    Prepare the candidate resume PDF as a Gemini PDF part.
 
-    Each PDF page is converted into a JPEG image so the AI Hiring
-    Agent can analyze visually formatted resumes.
+    The original PDF is sent directly to Gemini instead of
+    converting PDF pages into images. This avoids the need for
+    Poppler and works better in cloud environments such as
+    Streamlit Community Cloud.
     """
 
     if uploaded_file is None:
@@ -22,41 +22,28 @@ def extract_resume_pages(uploaded_file):
     if not file_bytes:
         raise ValueError("The uploaded resume file is empty.")
 
+    file_name = getattr(
+        uploaded_file,
+        "name",
+        "resume.pdf"
+    )
+
+    if not file_name.lower().endswith(".pdf"):
+        raise ValueError(
+            "Please upload a valid PDF resume."
+        )
+
     try:
-        images = pdf2image.convert_from_bytes(file_bytes)
+        pdf_part = types.Part.from_bytes(
+            data=file_bytes,
+            mime_type="application/pdf"
+        )
     except Exception as exc:
         raise RuntimeError(
-            "Unable to process the resume PDF. "
-            "Make sure the PDF is valid and Poppler is installed "
-            "and available in the system PATH."
+            "Unable to prepare the resume PDF for Gemini."
         ) from exc
 
-    if not images:
-        raise ValueError(
-            "No pages could be extracted from the resume PDF."
-        )
-
-    image_parts = []
-
-    for image in images:
-        img_byte_arr = io.BytesIO()
-
-        image.save(
-            img_byte_arr,
-            format="JPEG",
-            quality=90
-        )
-
-        image_bytes = img_byte_arr.getvalue()
-
-        image_part = types.Part.from_bytes(
-            data=image_bytes,
-            mime_type="image/jpeg"
-        )
-
-        image_parts.append(image_part)
-
-    return image_parts
+    return [pdf_part]
 
 
 def clean_json_response(response_text):
@@ -135,11 +122,9 @@ def validate_agent_output(analysis):
     }
 
     for key, default_value in default_structure.items():
-
         if key not in analysis:
             analysis[key] = default_value
 
-    # Ensure score is numeric and stays within 0–100.
     try:
         score = float(
             analysis.get(
@@ -164,7 +149,6 @@ def validate_agent_output(analysis):
     except (TypeError, ValueError):
         analysis["resume_alignment_score"] = 0
 
-    # Ensure list-based fields are actually lists.
     list_fields = [
         "matching_skills",
         "matching_keywords",
@@ -177,14 +161,12 @@ def validate_agent_output(analysis):
     ]
 
     for field in list_fields:
-
         if not isinstance(
             analysis.get(field),
             list
         ):
             analysis[field] = []
 
-    # Nested sections.
     nested_fields = {
         "experience_alignment": [
             "summary",
@@ -212,8 +194,10 @@ def validate_agent_output(analysis):
         for field in fields:
 
             if field not in analysis[section]:
+
                 if field == "summary":
                     analysis[section][field] = ""
+
                 else:
                     analysis[section][field] = []
 
@@ -225,7 +209,9 @@ def validate_agent_output(analysis):
 
     cleaned_questions = []
 
-    for question in analysis["suggested_interview_questions"]:
+    for question in analysis[
+        "suggested_interview_questions"
+    ]:
 
         if isinstance(question, dict):
 
@@ -438,8 +424,6 @@ B. Job description
 C. Recruitment knowledge
 
 Do not introduce outside assumptions.
-
-For example:
 
 If the job requires Python and the resume
 explicitly lists Python:
@@ -695,7 +679,7 @@ Use exactly this structure:
     "verification_items": [],
 
     "human_review_notice": ""
-    }}
+}}
 
 ==================================================
 JOB DESCRIPTION
