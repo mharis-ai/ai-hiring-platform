@@ -253,15 +253,15 @@ def sign_up(
     try:
         client = get_supabase_client()
 
+        # Let Supabase use the configured Site URL for email confirmation.
+        # This avoids passing a redirect URL from Streamlit and prevents
+        # redirect allow-list validation issues during signup.
         signup_options = {
             "data": {
                 "full_name": full_name,
                 "role": role,
             }
         }
-
-        if APP_URL:
-            signup_options["email_redirect_to"] = APP_URL
 
         response = client.auth.sign_up(
             {
@@ -659,15 +659,9 @@ def request_password_reset(email: str):
     try:
         client = get_supabase_client()
 
-        options = {}
-
-        if APP_URL:
-            options["redirect_to"] = APP_URL
-
-        client.auth.reset_password_for_email(
-            email,
-            options,
-        )
+        # Let Supabase use the configured Site URL for password reset.
+        # The Site URL is already configured in Supabase Authentication.
+        client.auth.reset_password_for_email(email)
 
         return (
             True,
