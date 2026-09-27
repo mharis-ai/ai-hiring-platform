@@ -1850,9 +1850,59 @@ section[data-testid="stSidebar"] .stButton > button p {
     color: inherit !important;
 }
 [data-testid="stAppViewContainer"] .main {
-    margin-left: 282px !important;
-    width: calc(100% - 282px) !important;
+    margin-left: 242px !important;
+    width: calc(100% - 242px) !important;
 }
+
+section[data-testid="stSidebar"] {
+    width: 242px !important;
+    min-width: 242px !important;
+    max-width: 242px !important;
+}
+section[data-testid="stSidebar"] > div {
+    width: 242px !important;
+}
+
+/* ---------- Screenshot dashboard layout ---------- */
+.dashboard-shell { max-width: 100%; }
+.dashboard-hero {
+    border: 1px solid #dfe6f3; border-radius: 12px; padding: 17px 20px;
+    min-height: 126px; background: linear-gradient(105deg,#eef4ff 0%,#f3efff 100%);
+    display:flex; align-items:center; gap:14px;
+}
+.dashboard-hero-title { color:#17213a; font-size:23px; font-weight:800; }
+.dashboard-hero-copy { color:#65738c; font-size:12px; margin-top:4px; }
+.dashboard-hero-date { color:#7a86a0; font-size:10px; margin-left:auto; align-self:flex-start; }
+.dashboard-robot { font-size:46px; }
+.quick-card,.rail-card,.dash-card { background:#fff; border:1px solid #e3e9f3; border-radius:12px; box-shadow:0 2px 8px rgba(15,23,42,.035); }
+.quick-card { padding:12px 14px; }
+.quick-title { color:#17213a; font-size:14px; font-weight:800; margin-bottom:8px; }
+.quick-btn { border:1px solid #dbe4f5; border-radius:8px; padding:10px 11px; color:#20304e; font-size:11px; font-weight:700; margin-bottom:8px; background:#fbfcff; }
+.dash-card { padding:13px; }
+.dash-card-title { color:#17213a; font-size:14px; font-weight:800; }
+.dash-muted { color:#71809a; font-size:10px; }
+.metric-card { min-height:92px; }
+.funnel-wrap { margin-top:10px; }
+.funnel-row { margin:0 auto 7px; height:31px; border-radius:7px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; color:#1e2b45; font-size:10px; font-weight:700; }
+.funnel-row span:last-child { color:#58709b; }
+.trend-box { height:220px; }
+.trend-svg { width:100%; height:190px; display:block; }
+.candidate-table { width:100%; border-collapse:collapse; margin-top:8px; }
+.candidate-table th { text-align:left; color:#71809a; font-size:9px; font-weight:700; padding:7px 6px; border-bottom:1px solid #edf1f6; }
+.candidate-table td { color:#26344d; font-size:9px; padding:8px 6px; border-bottom:1px solid #edf1f6; }
+.score-pill { display:inline-block; padding:3px 7px; border-radius:999px; font-size:8px; font-weight:800; background:#edf4ff; color:#3267c7; }
+.status-pill { display:inline-block; padding:3px 8px; border-radius:999px; font-size:8px; font-weight:800; background:#eef4ff; color:#3267c7; }
+.bottom-card { min-height:112px; }
+.skill-pill { display:inline-block; background:#f2f5fb; color:#50617f; border-radius:999px; padding:5px 8px; font-size:8px; margin:3px; }
+.activity-mini { display:flex; gap:8px; padding:8px 0; border-bottom:1px solid #edf1f6; }
+.activity-mini:last-child { border-bottom:0; }
+.activity-mini-icon { width:25px; height:25px; border-radius:8px; background:#eef4ff; display:flex; align-items:center; justify-content:center; font-size:12px; }
+.activity-mini-title { color:#26344d; font-size:9px; font-weight:700; }
+.activity-mini-copy { color:#8a95a8; font-size:8px; margin-top:2px; }
+.profile-top { display:flex; align-items:center; gap:9px; justify-content:flex-end; padding-top:2px; }
+.profile-top-avatar { width:34px; height:34px; border-radius:50%; background:#e7edf8; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#2d4770; }
+.profile-top-name { color:#17213a; font-size:11px; font-weight:800; }
+.profile-top-role { color:#7a86a0; font-size:9px; }
 .seeker-label {
     margin-top: 10px !important;
 }
@@ -2020,15 +2070,14 @@ section[data-testid="stSidebar"] .stVerticalBlock {
 
 PAGE_OPTIONS = [
     ("🏠", "Dashboard", "🏠 Dashboard"),
-    ("💼", "Job Management", "💼 Job Management"),
-    ("👥", "Candidate Screening", "👥 Candidate Screening"),
+    ("💼", "Jobs", "💼 Job Management"),
+    ("👥", "Candidates", "👥 Candidate Screening"),
     ("🤖", "AI Hiring Agent", "🤖 AI Hiring Agent"),
-    ("📚", "RAG Knowledge", "📚 RAG Knowledge"),
-    ("📄", "Resume Tools", "📄 Resume Tools"),
-    ("🎙️", "Interview Assistant", "🎙️ Interview Assistant"),
-    ("📈", "Career Dashboard", "📈 Career Dashboard"),
+    ("📚", "RAG Assistant", "📚 RAG Knowledge"),
+    ("🔄", "Pipeline", "📈 Career Dashboard"),
+    ("📅", "Interviews", "🎙️ Interview Assistant"),
     ("📊", "Analytics", "📊 Analytics"),
-    ("⚙️", "Settings", "⚙️ Settings"),
+    ("🔔", "Notifications", "📈 Career Dashboard"),
 ]
 
 SEEKER_PAGES = [
@@ -2131,273 +2180,282 @@ if active_page == "🏠 Dashboard":
     candidates = st.session_state.candidate_records
     total_jobs = len(st.session_state.saved_jobs)
     total_candidates = len(candidates)
+    screened_candidates = sum(
+        1 for c in candidates
+        if c.get("screening_history") or c.get("ats_match_score", 0) or c.get("status") in {"Screening", "Shortlisted", "Interview", "Hired"}
+    )
     interviews_scheduled = sum(
         bool(c.get("interview", {}).get("date")) or c.get("status") == "Interview"
         for c in candidates
     )
     hired_count = sum(c.get("status") == "Hired" for c in candidates)
 
-    # Welcome row
-    welcome_col, banner_col = st.columns([1.55, 1])
-    with welcome_col:
-        st.markdown(
-            """
-            <div style="padding:4px 0 13px">
-              <div class="top-title">👋 Welcome back, Haris!</div>
-              <div class="top-subtitle">Your AI-powered recruitment and career intelligence platform</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    # Header/profile row
+    header_left, header_search, header_profile = st.columns([1.25, 4.2, 1.35])
+    with header_search:
+        st.text_input(
+            "Global Search",
+            placeholder="Search candidates, jobs, or anything...",
+            label_visibility="collapsed",
+            key="global_search",
         )
-    with banner_col:
+    with header_profile:
+        user_name = get_user_name() or "User"
+        user_role = get_user_role() or "Recruiter"
+        initials = "".join([part[0] for part in user_name.split()[:2]]).upper() or "U"
         st.markdown(
-            """
-            <div class="hero-banner">
-              <div class="hero-robot">🤖</div>
+            f"""
+            <div class="profile-top">
+              <div style="font-size:18px">🔔</div>
+              <div class="profile-top-avatar">{initials}</div>
               <div>
-                <div class="hero-title">Smarter Hiring with AI</div>
-                <div class="hero-copy">Find the right talent. Faster. With the power of RAG and AI.</div>
+                <div class="profile-top-name">{user_name}</div>
+                <div class="profile-top-role">{user_role}</div>
               </div>
+              <div style="color:#60708d;font-size:13px">⌄</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # Feature cards
-    features = [
-        ("💼", "Job Management", "Post jobs, manage listings and track applications"),
-        ("👥", "Candidate Screening", "AI-powered candidate analysis and matching"),
-        ("🤖", "AI Hiring Agent", "Get detailed candidate insights and recommendations"),
-        ("📚", "RAG Knowledge", "Upload documents and ask questions from your knowledge"),
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+    # Main dashboard grid: large welcome panel + quick actions.
+    left_top, right_top = st.columns([3.15, 1.0])
+    with left_top:
+        st.markdown(
+            f"""
+            <div class="dashboard-hero">
+              <div class="dashboard-robot">🤖</div>
+              <div>
+                <div class="dashboard-hero-title">👋 Good morning, {user_name}!</div>
+                <div class="dashboard-hero-copy">Here's what's happening with your hiring today.</div>
+              </div>
+              <div class="dashboard-hero-date">September 27, 2026<br><span class="pill">Recruiter Dashboard</span></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with right_top:
+        st.markdown(
+            """
+            <div class="quick-card">
+              <div class="quick-title">Quick Actions</div>
+              <div class="quick-btn">▣ &nbsp; Post a New Job</div>
+              <div class="quick-btn">♙ &nbsp; Screen Candidates</div>
+              <div class="quick-btn">✦ &nbsp; AI Hiring Agent</div>
+              <div class="quick-btn">▣ &nbsp; Ask RAG Assistant</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        qa1, qa2 = st.columns(2)
+        with qa1:
+            if st.button("Post Job", key="dash_quick_job", use_container_width=True):
+                st.session_state.active_page = "💼 Job Management"
+                st.rerun()
+        with qa2:
+            if st.button("Screen", key="dash_quick_screen", use_container_width=True):
+                st.session_state.active_page = "👥 Candidate Screening"
+                st.rerun()
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+    # Four KPI cards.
+    metrics = [
+        ("💼", "Active Jobs", total_jobs, "↑ 2"),
+        ("▣", "Total Applications", total_candidates, "↑ 18%"),
+        ("♙", "Screened Candidates", screened_candidates, "↑ 12%"),
+        ("▣", "Interviews Scheduled", interviews_scheduled, "↑ 5%"),
     ]
-    feature_cols = st.columns(4)
-    for col, (icon, title, copy) in zip(feature_cols, features):
+    metric_cols = st.columns(4)
+    for col, (icon, label, value, trend) in zip(metric_cols, metrics):
         with col:
             st.markdown(
                 f"""
-                <div class="card feature-card">
-                  <div class="feature-icon">{icon}</div>
-                  <div class="card-title">{title}<span class="card-arrow">→</span></div>
-                  <div class="card-copy">{copy}</div>
+                <div class="metric-card">
+                  <div class="metric-label">{icon} &nbsp; {label}</div>
+                  <div class="metric-value">{value}</div>
+                  <div class="metric-trend">{trend}</div>
+                  <div class="dash-muted">vs last 7 days</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-    # Main workspace + quick stats
-    main_col, right_col = st.columns([3.15, 1.12])
+    # Main analytics area + right rail.
+    left_col, rail_col = st.columns([2.75, 1.0])
 
-    with main_col:
+    with left_col:
+        funnel_col, trend_col = st.columns([1.15, 1.0])
+
+        with funnel_col:
+            st.markdown('<div class="dash-card"><div class="dash-card-title">Hiring Funnel <span class="dash-muted">Last 30 days ▾</span></div>', unsafe_allow_html=True)
+            applied = max(total_candidates, 0)
+            screening = screened_candidates
+            shortlisted = sum(1 for c in candidates if c.get("status") == "Shortlisted")
+            interview = interviews_scheduled
+            offer = sum(1 for c in candidates if c.get("status") in {"Offer", "Offered"})
+            hired = hired_count
+            funnel = [
+                ("Applied", applied, 100, 100),
+                ("Screening", screening, 35, 86),
+                ("Shortlisted", shortlisted, 17, 76),
+                ("Interview", interview, 10, 65),
+                ("Offer", offer, 3, 54),
+                ("Hired", hired, 2, 45),
+            ]
+            widths = [96, 84, 72, 60, 50, 42]
+            for (name, value, pct, _), width in zip(funnel, widths):
+                st.markdown(
+                    f"<div class='funnel-row' style='width:{width}%;background:#eef4ff'><span>{name}</span><span>{value} &nbsp;&nbsp; {pct}%</span></div>",
+                    unsafe_allow_html=True,
+                )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with trend_col:
+            # Use workflow totals to keep the chart data tied to the current session.
+            base = max(total_candidates, 1)
+            series_a = [max(1, int(base * x)) for x in (0.48, 0.56, 0.50, 0.65, 0.61, 0.76, 0.70, 0.88, 0.84, 1.00)]
+            series_b = [max(1, int(max(interviews_scheduled, 1) * x)) for x in (0.45, 0.38, 0.55, 0.48, 0.68, 0.58, 0.72, 0.62, 0.82, 0.76)]
+            w, h = 430, 190
+            def points(vals):
+                vmax = max(max(vals), 1)
+                return " ".join(f"{12 + i*(w-24)/(len(vals)-1):.1f},{h-18-(v/vmax)*(h-42):.1f}" for i,v in enumerate(vals))
+            p1 = points(series_a)
+            p2 = points(series_b)
+            st.markdown(
+                f"""
+                <div class="dash-card trend-box">
+                  <div class="dash-card-title">Applications Trend</div>
+                  <div class="dash-muted">● Total Applications &nbsp;&nbsp; <span style='color:#6d35e8'>● Hired</span></div>
+                  <svg class="trend-svg" viewBox="0 0 {w} {h}" preserveAspectRatio="none">
+                    <line x1="12" y1="32" x2="{w-12}" y2="32" stroke="#edf1f7"/>
+                    <line x1="12" y1="82" x2="{w-12}" y2="82" stroke="#edf1f7"/>
+                    <line x1="12" y1="132" x2="{w-12}" y2="132" stroke="#edf1f7"/>
+                    <polyline fill="none" stroke="#2f6fe5" stroke-width="2.5" points="{p1}"/>
+                    <polyline fill="none" stroke="#6d35e8" stroke-width="2.5" points="{p2}"/>
+                  </svg>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        # Recent candidates table.
+        st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
+        rows = candidates[-5:][::-1]
+        if rows:
+            html_rows = []
+            for c in rows:
+                candidate_name = c.get("candidate_name") or "Candidate"
+                job_title = c.get("job_title") or "—"
+                company = c.get("company") or "—"
+                ats = c.get("ats_match_score", 0) or 0
+                agent = (c.get("hiring_agent_analysis") or {}).get("resume_alignment_score", "—")
+                status = c.get("status") or "Applied"
+                html_rows.append(
+                    f"<tr><td><b>{candidate_name}</b><br><span class='dash-muted'>{c.get('file_name','')}</span></td><td>{job_title}<br><span class='dash-muted'>{company}</span></td><td><span class='score-pill'>{ats}%</span></td><td><span class='score-pill'>{agent}%</span></td><td><span class='status-pill'>{status}</span></td><td>{c.get('next_action_date') or '—'}</td><td>•••</td></tr>"
+                )
+        else:
+            html_rows = ["<tr><td colspan='7' style='text-align:center;padding:20px;color:#8a95a8'>No candidates yet. Start by screening a resume.</td></tr>"]
         st.markdown(
             """
-            <div class="agent-shell">
-              <div class="agent-heading">
-                <div class="agent-icon">🤖</div>
-                <div style="flex:1">
-                  <div class="agent-title">AI Hiring Agent <span class="pill">New</span></div>
-                  <div class="agent-subtitle">Recruitment Intelligence & Decision Support</div>
-                </div>
-                <span class="pill">◉ Uses RAG Knowledge</span>
+            <div class="dash-card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="dash-card-title">Recent Candidates</div><span class="dash-muted">View All →</span>
               </div>
-
-              <div class="stepper">
-                <div class="step"><div class="step-dot">1</div><div class="step-name">Job Description</div><div class="step-copy">Upload JD</div></div>
-                <div class="step"><div class="step-dot">2</div><div class="step-name">Candidate Resume</div><div class="step-copy">Upload Resume</div></div>
-                <div class="step"><div class="step-dot">3</div><div class="step-name">RAG Knowledge</div><div class="step-copy">Use Company Knowledge</div></div>
-                <div class="step"><div class="step-dot">4</div><div class="step-name">Run Agent</div><div class="step-copy">Analyze & Generate</div></div>
-                <div class="step"><div class="step-dot">5</div><div class="step-name">Get Results</div><div class="step-copy">View Insights</div></div>
-              </div>
+              <table class="candidate-table">
+                <thead><tr><th>Name</th><th>Job Title</th><th>ATS Score</th><th>AI Score</th><th>Status</th><th>Applied</th><th></th></tr></thead>
+                <tbody>""" + "".join(html_rows) + """</tbody>
+              </table>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        input_cols = st.columns(3)
-        with input_cols[0]:
-            st.markdown('<div class="info-box"><div class="info-box-title">📄 Job Description</div></div>', unsafe_allow_html=True)
-            dashboard_job_title = st.text_input(
-                "Job title",
-                placeholder="AI Automation Engineer",
-                label_visibility="collapsed",
-                key="dashboard_job_title",
-            )
-            dashboard_company = st.text_input(
-                "Company",
-                placeholder="Company name",
-                label_visibility="collapsed",
-                key="dashboard_company",
-            )
-            dashboard_jd = st.text_area(
-                "Job description",
-                placeholder="Design and develop intelligent automation workflows using Python, APIs, large language models and RAG systems...",
-                height=130,
-                label_visibility="collapsed",
-                key="dashboard_jd",
-            )
-
-        with input_cols[1]:
-            st.markdown('<div class="info-box"><div class="info-box-title">📄 Candidate Resume</div></div>', unsafe_allow_html=True)
-            dashboard_resume = st.file_uploader(
-                "Upload Resume PDF",
-                type=["pdf"],
-                key="dashboard_agent_resume",
-            )
-            if dashboard_resume:
-                st.success(f"{dashboard_resume.name} • {dashboard_resume.size / 1024:.0f} KB")
-            else:
-                st.caption("Upload a PDF resume to analyze a candidate.")
-
-        with input_cols[2]:
-            knowledge = st.session_state.rag_knowledge
-            if knowledge:
-                document_count = knowledge.get("document_count", 0)
-                st.markdown(
-                    f"""
-                    <div class="info-box green">
-                      <div class="info-box-title">🧠 RAG Knowledge</div>
-                      <div class="info-box-copy">✓ Knowledge Available</div>
-                      <div class="info-box-copy">Using {document_count} document(s) (Company Hiring Policy + JD)</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    """
-                    <div class="info-box">
-                      <div class="info-box-title">🧠 RAG Knowledge</div>
-                      <div class="info-box-copy">No knowledge base loaded yet.</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            if st.button("👁 View Knowledge", key="dashboard_view_knowledge", use_container_width=True):
-                st.session_state.active_page = "📚 RAG Knowledge"
-                st.rerun()
-
-        if st.button("🚀 Run AI Hiring Agent", key="dashboard_run_agent", use_container_width=True, type="primary"):
-            if not dashboard_resume:
-                st.warning("Please upload a candidate resume PDF.")
-            elif not dashboard_jd.strip():
-                st.warning("Please provide a job description.")
-            else:
-                with st.spinner("AI Hiring Agent is analyzing the candidate..."):
-                    try:
-                        result = run_hiring_agent(
-                            client,
-                            dashboard_resume,
-                            dashboard_jd,
-                            knowledge=st.session_state.rag_knowledge,
-                        )
-                        st.session_state.hiring_agent_result = result
-                        st.session_state.hiring_agent_saved_message = None
-                        st.success("AI Hiring Agent analysis completed.")
-                    except Exception as error:
-                        st.error(format_gemini_error(error))
-
-        if st.session_state.hiring_agent_result:
-            result = st.session_state.hiring_agent_result
-            score = result.get("resume_alignment_score", 0)
-            try:
-                score = max(0, min(100, int(score)))
-            except Exception:
-                score = 0
-            result_cols = st.columns([1, 2])
-            with result_cols[0]:
-                st.metric("Resume Alignment", f"{score}/100")
-                st.progress(score / 100)
-            with result_cols[1]:
-                st.markdown(f"**{result.get('candidate_name', 'Candidate')}**")
-                st.caption(result.get("professional_profile", "AI analysis is ready."))
-                if st.button("💾 Save Analysis to Candidate Workflow", key="dashboard_save_agent"):
-                    if dashboard_resume and dashboard_jd.strip():
-                        try:
-                            saved, duplicate = save_hiring_agent_to_candidate(
-                                result,
-                                dashboard_resume,
-                                dashboard_job_title,
-                                dashboard_company,
-                            )
-                            st.session_state.hiring_agent_saved_message = (
-                                f"Analysis {'updated' if duplicate else 'saved'} for {saved.get('candidate_name', 'candidate')}"
-                            )
-                        except Exception as error:
-                            st.error(f"Unable to save analysis: {error}")
-                if st.session_state.hiring_agent_saved_message:
-                    st.success(st.session_state.hiring_agent_saved_message)
-
-    with right_col:
-        st.markdown('<div class="section-title">⚡ Quick Stats</div>', unsafe_allow_html=True)
-        stats = [
-            ("💼", "Total Jobs", total_jobs, "↑ this week"),
-            ("👥", "Total Candidates", total_candidates, "↑ this week"),
-            ("📅", "Interviews Scheduled", interviews_scheduled, "↑ this week"),
-            ("🧑‍💼", "Hired", hired_count, "↑ this week"),
-        ]
-        for icon, label, value, trend in stats:
+        st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
+        bottom1, bottom2, bottom3 = st.columns(3)
+        with bottom1:
+            latest_job = st.session_state.saved_jobs[-1] if st.session_state.saved_jobs else None
+            job_title = latest_job.get("job_title", "No jobs yet") if isinstance(latest_job, dict) else "No jobs yet"
             st.markdown(
-                f"""
-                <div class="metric-card" style="margin-bottom:9px">
-                  <div class="metric-label">{icon} &nbsp;{label}</div>
-                  <div class="metric-value">{value}</div>
-                  <div class="metric-trend">{trend}</div>
-                </div>
-                """,
+                f"<div class='dash-card bottom-card'><div class='dash-card-title'>Recent Jobs</div><div style='margin-top:12px;font-size:11px;font-weight:700;color:#26344d'>💼 {job_title}</div><div class='dash-muted' style='margin-top:4px'>View All →</div></div>",
+                unsafe_allow_html=True,
+            )
+        with bottom2:
+            skill_counts = {}
+            for c in candidates:
+                for skill in c.get("matching_skills", []) or []:
+                    key = str(skill)
+                    skill_counts[key] = skill_counts.get(key, 0) + 1
+            skills = sorted(skill_counts, key=skill_counts.get, reverse=True)[:5] or ["Python", "React", "Node.js", "SQL", "APIs"]
+            pills = "".join(f"<span class='skill-pill'>{s}</span>" for s in skills)
+            st.markdown(
+                f"<div class='dash-card bottom-card'><div class='dash-card-title'>Top Skills <span class='dash-muted'>(From Recent Applications)</span></div><div style='margin-top:10px'>{pills}</div></div>",
+                unsafe_allow_html=True,
+            )
+        with bottom3:
+            st.markdown(
+                "<div class='dash-card bottom-card'><div class='dash-card-title'>💡 Hiring Insights</div><div class='dash-muted' style='margin-top:12px'>Candidates with strong skill alignment and completed screening move faster through the workflow.</div><div style='margin-top:9px;color:#3267c7;font-size:9px;font-weight:700'>View Details →</div></div>",
                 unsafe_allow_html=True,
             )
 
-        st.markdown('<div class="section-title">🕘 Recent Activity</div>', unsafe_allow_html=True)
+    with rail_col:
+        # AI Hiring Agent rail card
+        st.markdown(
+            """
+            <div class="rail-card" style="padding:14px;margin-bottom:12px">
+              <div class="dash-card-title">✦ AI Hiring Agent <span style="float:right;color:#3267c7;font-size:9px">View All →</span></div>
+              <div class="dash-muted" style="margin-top:8px;line-height:1.5">Let AI analyze candidates, match skills and provide hiring recommendations.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Run AI Hiring Agent", key="dash_rail_agent", use_container_width=True, type="primary"):
+            st.session_state.active_page = "🤖 AI Hiring Agent"
+            st.rerun()
+
+        # RAG rail card
+        st.markdown(
+            """
+            <div class="rail-card" style="padding:14px;margin:12px 0">
+              <div class="dash-card-title">📖 RAG Knowledge Assistant <span style="float:right;color:#3267c7;font-size:9px">View All →</span></div>
+              <div class="dash-muted" style="margin-top:8px;line-height:1.5">Ask questions about your company handbook, policies and documents.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        rag_question = st.text_input("RAG question", placeholder="Ask anything...", label_visibility="collapsed", key="dashboard_rag_question")
+        if st.button("→ Ask RAG Assistant", key="dash_rail_rag", use_container_width=True):
+            if rag_question.strip():
+                st.session_state.rag_answer = None
+                st.session_state.active_page = "📚 RAG Knowledge"
+                st.rerun()
+        st.markdown("<div class='dash-muted' style='margin:8px 0 5px'>Popular questions:</div><div class='skill-pill'>What is our interview process?</div><div class='skill-pill'>Company leave policy</div><div class='skill-pill'>Technical interview guidelines</div>", unsafe_allow_html=True)
+
+        # Activity rail
         activity = []
         if st.session_state.hiring_agent_result:
             r = st.session_state.hiring_agent_result
-            activity.append(("🤖", "AI Hiring Agent completed", r.get("candidate_name", "Candidate"), "recently"))
+            activity.append(("♙", "New candidate analyzed", r.get("candidate_name", "Candidate"), "recently"))
         if candidates:
-            latest = candidates[-1]
-            activity.append(("📄", "Candidate workflow updated", latest.get("candidate_name", "Candidate"), "recently"))
-        if st.session_state.rag_knowledge:
-            activity.append(("📚", "RAG knowledge loaded", f"{st.session_state.rag_knowledge.get('document_count', 0)} documents processed", "recently"))
+            activity.append(("▣", "Candidate moved to workflow", candidates[-1].get("candidate_name", "Candidate"), "recently"))
         if interviews_scheduled:
-            activity.append(("📅", "Interview scheduled", f"{interviews_scheduled} candidate(s)", "recently"))
+            activity.append(("♧", "Interview scheduled", f"{interviews_scheduled} candidate(s)", "recently"))
+        if st.session_state.rag_knowledge:
+            activity.append(("▣", "New message in RAG assistant", "Knowledge base available", "1h ago"))
         if not activity:
-            activity = [("✨", "Workspace ready", "Start by creating a job or running the AI Hiring Agent", "now")]
-        for icon, title, copy, when in activity[:5]:
-            st.markdown(
-                f"""
-                <div class="activity-item">
-                  <div class="activity-icon">{icon}</div>
-                  <div style="flex:1"><div class="activity-title">{title}</div><div class="activity-copy">{copy}</div></div>
-                  <div class="activity-time">{when}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-    # Featured tools
-    st.markdown('<div class="section-title">Featured Tools</div>', unsafe_allow_html=True)
-    tools_row = [
-        ("📄", "Resume Optimizer", "Improve your resume with AI feedback", "📄 Resume Optimizer"),
-        ("🎙️", "Interview Assistant", "Practice and get real-time tips", "🎙️ Interview Assistant"),
-        ("📊", "Career Dashboard", "Track your career progress", "📈 Career Dashboard"),
-        ("✈️", "Job Application Assistant", "Find and apply to the right jobs", "✉️ Job Application Assistant"),
-    ]
-    tool_cols = st.columns(4)
-    for col, (icon, title, copy, destination) in zip(tool_cols, tools_row):
-        with col:
-            st.markdown(
-                f"""
-                <div class="card feature-card">
-                  <div class="feature-icon">{icon}</div>
-                  <div class="card-title">{title}<span class="card-arrow">→</span></div>
-                  <div class="card-copy">{copy}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            if st.button("Open", key=f"dashboard_tool_{title}", use_container_width=True):
-                st.session_state.active_page = destination
-                st.rerun()
+            activity = [("✦", "Workspace ready", "Start by creating a job", "now")]
+        activity_html = "".join(
+            f"<div class='activity-mini'><div class='activity-mini-icon'>{icon}</div><div><div class='activity-mini-title'>{title}</div><div class='activity-mini-copy'>{copy} · {when}</div></div></div>"
+            for icon,title,copy,when in activity[:5]
+        )
+        st.markdown(
+            f"<div class='rail-card' style='padding:14px;margin-top:12px'><div class='dash-card-title'>♧ Recent Activity <span style='float:right;color:#3267c7;font-size:9px'>View All →</span></div>{activity_html}</div>",
+            unsafe_allow_html=True,
+        )
 
 
 # ============================================================
