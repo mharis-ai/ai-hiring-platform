@@ -1850,7 +1850,8 @@ section[data-testid="stSidebar"] .stButton > button p {
     color: inherit !important;
 }
 [data-testid="stAppViewContainer"] .main {
-    margin-left: 0 !important;
+    margin-left: 282px !important;
+    width: calc(100% - 282px) !important;
 }
 .seeker-label {
     margin-top: 10px !important;
