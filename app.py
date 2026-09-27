@@ -40,6 +40,17 @@ from modules.gemini_utils import (
     format_gemini_error,
 )
 
+from modules.auth import (
+    initialize_auth_state,
+    get_current_user,
+    get_user_name,
+    get_user_role,
+    sign_in,
+    sign_up,
+    request_password_reset,
+    sign_out,
+)
+
 # ============================================================
 # PAGE CONFIG
 # ============================================================
@@ -49,6 +60,107 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide",
 )
+
+
+# ============================================================
+# AUTHENTICATION GATE
+# ============================================================
+
+def render_auth_page():
+
+    st.markdown(
+        """
+        <style>
+        .auth-wrap { max-width: 520px; margin: 60px auto 0 auto; }
+        .auth-title { font-size: 34px; font-weight: 800; text-align: center; }
+        .auth-subtitle { text-align: center; color: #6b7280; margin-bottom: 24px; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown('<div class="auth-wrap">', unsafe_allow_html=True)
+    st.markdown('<div class="auth-title">🤖 AI Hiring Platform</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="auth-subtitle">Sign in to continue to your hiring workspace.</div>',
+        unsafe_allow_html=True,
+    )
+
+    login_tab, signup_tab, forgot_tab = st.tabs(
+        ["🔐 Login", "📝 Sign Up", "🔑 Forgot Password"]
+    )
+
+    with login_tab:
+        with st.form("login_form"):
+            email = st.text_input("Email", placeholder="you@example.com")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button(
+                "Login",
+                use_container_width=True,
+                type="primary",
+            )
+
+        if submitted:
+            success, message = sign_in(email, password)
+            if success:
+                st.success(message)
+                st.rerun()
+            else:
+                st.error(message)
+
+    with signup_tab:
+        with st.form("signup_form"):
+            full_name = st.text_input("Full Name", placeholder="Your full name")
+            email = st.text_input("Email", placeholder="you@example.com", key="signup_email")
+            password = st.text_input("Password", type="password", key="signup_password")
+            confirm_password = st.text_input(
+                "Confirm Password",
+                type="password",
+                key="signup_confirm_password",
+            )
+            role = st.selectbox("Account Type", ["Recruiter", "Job Seeker"])
+            submitted = st.form_submit_button(
+                "Create Account",
+                use_container_width=True,
+                type="primary",
+            )
+
+        if submitted:
+            if password != confirm_password:
+                st.error("Passwords do not match.")
+            else:
+                success, message = sign_up(full_name, email, password, role)
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+
+    with forgot_tab:
+        st.caption("Enter your account email and we will send a password reset link.")
+        with st.form("forgot_password_form"):
+            email = st.text_input("Email", placeholder="you@example.com", key="forgot_email")
+            submitted = st.form_submit_button(
+                "Send Reset Link",
+                use_container_width=True,
+                type="primary",
+            )
+
+        if submitted:
+            success, message = request_password_reset(email)
+            if success:
+                st.success(message)
+            else:
+                st.error(message)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+initialize_auth_state()
+current_user = get_current_user()
+
+if not current_user:
+    render_auth_page()
+    st.stop()
 
 
 # ============================================================
@@ -1644,60 +1756,18 @@ section[data-testid="stSidebar"] hr {
     border-color: #2a3953;
 }
 
-/* =========================================================
-   SIDEBAR — REFERENCE LAYOUT
-   ========================================================= */
-
-section[data-testid="stSidebar"] {
-    width: 282px !important;
-    min-width: 282px !important;
-    max-width: 282px !important;
-    background: #101d34 !important;
-    border-right: 1px solid #1d2b45 !important;
-}
-
-section[data-testid="stSidebar"] > div {
-    width: 282px !important;
-    background: #101d34 !important;
-}
-
-section[data-testid="stSidebar"] > div:first-child {
-    height: 100vh !important;
-}
-
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-    height: 100vh !important;
-    padding: 0 14px !important;
-    overflow: hidden !important;
-}
-
-section[data-testid="stSidebar"] .stMarkdown,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span {
-    color: #dce6f7 !important;
-}
-
-section[data-testid="stSidebar"] hr {
-    border-color: #2a3953 !important;
-}
-
-/* ---------- Brand ---------- */
+/* ---------- Sidebar ---------- */
 .brand {
-    padding: 18px 10px 22px !important;
-    margin: 0 !important;
+    padding: 6px 6px 18px 6px;
 }
-
 .brand-row {
     display: flex;
     align-items: center;
     gap: 12px;
 }
-
 .brand-icon {
     width: 44px;
     height: 44px;
-    min-width: 44px;
     border-radius: 13px;
     display: flex;
     align-items: center;
@@ -1707,165 +1777,96 @@ section[data-testid="stSidebar"] hr {
     font-size: 25px;
     font-weight: 800;
 }
-
 .brand-name {
     color: #ffffff;
     font-size: 20px;
     font-weight: 750;
     line-height: 1.1;
 }
-
 .brand-sub {
     color: #9fb0ca;
     font-size: 12px;
     margin-top: 4px;
 }
-
-/* ---------- Section labels ---------- */
 .nav-label {
-    display: block !important;
-    width: 100% !important;
-    color: #8fa2bf !important;
-    font-size: 10px !important;
+    color: #8fa2bf;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: .08em;
     font-weight: 700;
-    margin: 13px 6px 5px !important;
-    padding: 0 !important;
-    text-align: left !important;
+    margin: 18px 6px 8px;
 }
-
-.nav-label:first-child {
-    margin-top: 3px !important;
-}
-
-/* ---------- Navigation buttons ---------- */
-section[data-testid="stSidebar"] .stButton {
-    width: 100% !important;
-    margin: 0 0 3px 0 !important;
-}
-
-section[data-testid="stSidebar"] .stButton > button {
-    width: 100% !important;
-    min-height: 38px !important;
-    padding: 5px 11px !important;
-    border-radius: 8px !important;
-    border: 1px solid transparent !important;
-    background: transparent !important;
-    color: #dce6f7 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    text-align: left !important;
-    font-size: 12px !important;
-    font-weight: 550 !important;
-    box-shadow: none !important;
-    transition: background .15s ease, transform .15s ease;
-}
-
-section[data-testid="stSidebar"] .stButton > button > div {
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-}
-
-section[data-testid="stSidebar"] .stButton > button p {
-    width: auto !important;
-    flex: 0 0 auto !important;
-    margin: 0 !important;
-    text-align: left !important;
-    color: inherit !important;
-}
-
-section[data-testid="stSidebar"] .stButton > button span {
-    margin: 0 !important;
-    text-align: left !important;
-    justify-content: flex-start !important;
-}
-
-section[data-testid="stSidebar"] .stButton > button:hover {
-    background: #1b2b49 !important;
-    border-color: transparent !important;
-}
-
-section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-    background: linear-gradient(90deg, #245ecb, #2d70e8) !important;
-    color: #ffffff !important;
-    font-weight: 650 !important;
-}
-
-section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
-    background: linear-gradient(90deg, #245ecb, #2d70e8) !important;
-}
-
-/* ---------- Job seeker spacing ---------- */
-.seeker-label {
-    margin-top: 15px !important;
-}
-
-/* ---------- Divider ---------- */
-.sidebar-divider {
-    height: 1px;
-    background: #2a3953;
-    margin: 10px 0 10px !important;
-}
-
-/* ---------- Profile ---------- */
 .sidebar-profile {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 7px 8px 4px !important;
+    padding: 12px 8px 2px;
 }
-
 .avatar {
     width: 38px;
     height: 38px;
-    min-width: 38px;
     border-radius: 50%;
     background: #284b9b;
-    color: #ffffff;
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
     font-weight: 700;
 }
+.profile-name { color: #fff; font-weight: 650; font-size: 13px; }
+.profile-role { color: #8fa2bf; font-size: 11px; }
 
+/* radio-as-navigation */
+section[data-testid="stSidebar"] .stButton {
+    margin: 0 0 3px 0;
+}
+section[data-testid="stSidebar"] .stButton > button {
+    min-height: 30px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    color: #dce6f7 !important;
+    background: transparent !important;
+    text-align: left;
+    justify-content: flex-start;
+    padding: 3px 11px;
+    font-size: 12px;
+    font-weight: 550;
+    box-shadow: none !important;
+    transition: background .15s ease, transform .15s ease;
+}
+section[data-testid="stSidebar"] .stButton > button:hover {
+    background: #1b2b49 !important;
+    border-color: transparent !important;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    background: linear-gradient(90deg, #245ecb, #2d70e8) !important;
+    color: #ffffff !important;
+    font-weight: 650;
+}
+section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+    background: linear-gradient(90deg, #245ecb, #2d70e8) !important;
+}
+section[data-testid="stSidebar"] .stButton > button p {
+    color: inherit !important;
+}
+[data-testid="stAppViewContainer"] .main {
+    margin-left: 0 !important;
+}
+.seeker-label {
+    margin-top: 10px !important;
+}
+.sidebar-divider {
+    height: 1px;
+    background: #2a3953;
+    margin: 8px 0 8px;
+}
 .profile-copy {
     flex: 1;
 }
-
-.profile-name {
-    color: #ffffff;
-    font-weight: 650;
-    font-size: 13px;
-}
-
-.profile-role {
-    color: #8fa2bf;
-    font-size: 11px;
-}
-
 .profile-chevron {
     color: #8fa2bf;
     font-size: 17px;
     padding-right: 4px;
-}
-
-/* ---------- Never collapse ---------- */
-button[data-testid="stSidebarCollapseButton"] {
-    display: none !important;
-}
-
-[data-testid="stSidebarCollapsedControl"] {
-    display: none !important;
-}
-
-/* ---------- Compact Streamlit spacing ---------- */
-section[data-testid="stSidebar"] .stVerticalBlock {
-    gap: 0.25rem !important;
 }
 
 /* ---------- Header ---------- */
@@ -1904,6 +1905,10 @@ section[data-testid="stSidebar"] .stVerticalBlock {
 .hero-copy { color: #64748b; font-size: 12px; margin-top: 4px; }
 
 section[data-testid="stSidebar"] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
 }
 
 section[data-testid="stSidebar"] > div:first-child {
@@ -2002,46 +2007,6 @@ section[data-testid="stSidebar"] .stVerticalBlock {
 
 /* buttons */
 .stButton > button { border-radius: 9px; font-weight: 650; }
-
-/* ===== FINAL LAYOUT FIX: KEEP STREAMLIT SIDEBAR IN NORMAL FLOW ===== */
-section[data-testid="stSidebar"] {
-    width: 282px !important;
-    min-width: 282px !important;
-    max-width: 282px !important;
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    height: 100vh !important;
-    z-index: 1000 !important;
-}
-section[data-testid="stSidebar"] > div:first-child {
-    width: 282px !important;
-    min-width: 282px !important;
-    max-width: 282px !important;
-    height: 100vh !important;
-}
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-    width: 282px !important;
-    min-width: 282px !important;
-    max-width: 282px !important;
-    height: 100vh !important;
-    overflow-y: auto !important;
-}
-[data-testid="stAppViewContainer"] {
-    width: 100% !important;
-}
-[data-testid="stAppViewContainer"] > .main,
-[data-testid="stAppViewContainer"] section.main,
-section.main {
-    width: auto !important;
-    margin-left: 0 !important;
-}
-[data-testid="stMainBlockContainer"] {
-    max-width: 1400px !important;
-    width: auto !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
 </style>
 """,
     unsafe_allow_html=True
@@ -2119,18 +2084,22 @@ with st.sidebar:
 
     st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
     st.markdown(
-        """
+        f"""
         <div class="sidebar-profile">
-          <div class="avatar">HK</div>
+          <div class="avatar">{(get_user_name() or "U")[:2].upper()}</div>
           <div class="profile-copy">
-            <div class="profile-name">Haris Khan</div>
-            <div class="profile-role">Recruiter</div>
+            <div class="profile-name">{get_user_name() or "User"}</div>
+            <div class="profile-role">{get_user_role() or "Account"}</div>
           </div>
           <div class="profile-chevron">⌄</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    if st.button("↪ Logout", key="sidebar_logout", use_container_width=True):
+        sign_out()
+        st.rerun()
 
 # ============================================================
 # TOP SEARCH / HEADER
