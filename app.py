@@ -129,7 +129,7 @@ def render_auth_page():
             if password != confirm_password:
                 st.error("Passwords do not match.")
             else:
-                success, message = sign_up(full_name, email, password, role)
+                success, message, _ = sign_up(full_name, email, password, role)
                 if success:
                     st.success(message)
                 else:
