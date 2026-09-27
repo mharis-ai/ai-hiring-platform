@@ -4,4 +4,3 @@ google-genai
 pandas
 openpyxl
 reportlab
-openpyxl
