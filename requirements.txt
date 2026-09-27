@@ -4,5 +4,4 @@ google-genai
 pandas
 openpyxl
 reportlab
-pdf2image
 Pillow
