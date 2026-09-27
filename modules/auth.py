@@ -3,7 +3,6 @@ import os
 import streamlit as st
 
 from supabase import Client, create_client
-from supabase.lib.client_options import ClientOptions
 
 
 # ============================================================
@@ -58,10 +57,6 @@ def get_supabase_client() -> Client:
     return create_client(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(
-            auto_refresh_token=False,
-            persist_session=False,
-        ),
     )
 
 
